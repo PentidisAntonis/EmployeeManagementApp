@@ -1,7 +1,7 @@
 import sqlite3
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QApplication, QLabel, QWidget,  QGridLayout, QLineEdit, QPushButton, QMainWindow, \
+from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdit, QPushButton, QMainWindow, \
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QComboBox
 
 import sys
@@ -30,6 +30,12 @@ class MainWindow(QMainWindow):
         # This "addAction" is a method of file_menu_item, this action gets as input a QAction input the
         # add_employee_action
 
+        search_employee_action = QAction("Search Employee", self)  # Added search action
+        file_menu_item.addAction(search_employee_action)
+        search_employee_action.triggered.connect(self.show_search_dialog)  # Connect to the show_search_dialog method
+
+
+
         about_action = QAction("About")
         help_menu_item.addAction(about_action)
         # about_action.setMenuRole(QAction.MenuRole.NoRole) #only for macbook if it doesnt show the about_action
@@ -39,12 +45,15 @@ class MainWindow(QMainWindow):
         self.table.setHorizontalHeaderLabels(("Id", "Name", "Department", "Mobile"))
         self.setCentralWidget(self.table)
         # when we use a QMainWindow we have to set a central widget because we have menu bar and tool bar
+        self.table.verticalHeader().setVisible(False)  # We hide the first column with the index because we have the id
+        self.setCentralWidget(self.table)
         add_employee_action.triggered.connect(self.insert)  # connect to the insert method
 
     def load_data(self):
         connection = sqlite3.connect("database.db")
         result = connection.execute("SELECT * FROM employees")  # it is a list of tuples so, we have to use to for
-        self.table.setRowCount(0)        # This will ensure that the data will not be saved on top of the others
+        self.table.clearContents()  # Clear the table contents
+        self.table.setRowCount(0)  # This will ensure that the data will not be saved on top of the others
 
         for row_number, row_data in enumerate(result):
             self.table.insertRow(row_number)
@@ -58,6 +67,12 @@ class MainWindow(QMainWindow):
     def insert(self):
         dialog = InsertDialog()
         dialog.exec()
+
+    def show_search_dialog(self):
+        dialog = SearchDialog()
+        dialog.exec()
+
+
 
 
 class InsertDialog(QDialog):
@@ -106,6 +121,39 @@ class InsertDialog(QDialog):
         cursor.close()
         connection.close()
         main_window.load_data()  # load the new employee
+
+
+class SearchDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        # Set window title and size
+        self.setWindowTitle("Search Employee")
+        self.setFixedWidth(300)
+        self.setFixedHeight(300)
+
+        # Create layout and input widget
+        layout = QVBoxLayout()
+
+        self.employee_name = QLineEdit()
+        self.employee_name.setPlaceholderText("Name")
+        layout.addWidget(self.employee_name)
+
+        button = QPushButton("Search")
+        button.clicked.connect(self.search)
+        layout.addWidget(button)
+
+        self.setLayout(layout)
+
+    def search(self):
+        name = self.employee_name.text()
+        connection = sqlite3.connect("database.db")
+        cursor = connection.cursor()
+        result = cursor.execute("SELECT * FROM employees WHERE name=?", (name,))
+        row = list(result)[0]
+        print(row)
+
+        cursor.close()
+        connection.close()
 
 
 app = QApplication(sys.argv)
