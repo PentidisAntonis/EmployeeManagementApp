@@ -1,67 +1,61 @@
 import sqlite3
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QLabel, QWidget, QGridLayout, QLineEdit, QPushButton, QMainWindow, \
     QTableWidget, QTableWidgetItem, QDialog, QVBoxLayout, QComboBox
 
 import sys
 from PyQt6.QtGui import QAction
-import sqlite3
-
 
 def insert():
     dialog = InsertDialog()
     dialog.exec()
 
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Employee Management System")
+        self.setFixedWidth(410)
+        self.setFixedHeight(400)
 
         file_menu_item = self.menuBar().addMenu("&File")
-        # self refers to MainWindow class and menuBar comes from QMainWindow the parent of "MainWindow(QMainWindow)"
         help_menu_item = self.menuBar().addMenu("&Help")
 
         add_employee_action = QAction("Add Employee", self)
-        # sub item of file_menu_item, QAction is a class, self will connect this QAction
-        # to the actual class MainWindow
         file_menu_item.addAction(add_employee_action)
-        # This "addAction" is a method of file_menu_item, this action gets as input a QAction input the
-        # add_employee_action
 
-        search_employee_action = QAction("Search Employee", self)  # Added search action
+        search_employee_action = QAction("Search Employee", self)
         file_menu_item.addAction(search_employee_action)
-        search_employee_action.triggered.connect(self.show_search_dialog)  # Connect to the show_search_dialog method
+        search_employee_action.triggered.connect(self.show_search_dialog)
 
-
+        show_all_action = QAction("Show All Employees", self)
+        file_menu_item.addAction(show_all_action)
+        show_all_action.triggered.connect(self.load_data)  # Connect to the method that loads all employees
 
         about_action = QAction("About")
         help_menu_item.addAction(about_action)
-        # about_action.setMenuRole(QAction.MenuRole.NoRole) #only for macbook if it doesnt show the about_action
 
         self.table = QTableWidget()
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels(("Id", "Name", "Department", "Mobile"))
+        self.table.verticalHeader().setVisible(False)
         self.setCentralWidget(self.table)
-        # when we use a QMainWindow we have to set a central widget because we have menu bar and tool bar
-        self.table.verticalHeader().setVisible(False)  # We hide the first column with the index because we have the id
-        self.setCentralWidget(self.table)
-        add_employee_action.triggered.connect(self.insert)  # connect to the insert method
+
+        add_employee_action.triggered.connect(self.insert)
+        self.load_data()
 
     def load_data(self):
         connection = sqlite3.connect("database.db")
-        result = connection.execute("SELECT * FROM employees")  # it is a list of tuples so, we have to use to for
-        self.table.clearContents()  # Clear the table contents
-        self.table.setRowCount(0)  # This will ensure that the data will not be saved on top of the others
+        result = connection.execute("SELECT * FROM employees")
+        self.table.setRowCount(0)
 
         for row_number, row_data in enumerate(result):
             self.table.insertRow(row_number)
             for column_number, data in enumerate(row_data):
-                self.table.setItem(row_number, column_number, QTableWidgetItem(str(data)))
-                local_item = QTableWidgetItem(str(data))
-                local_item.setFlags(local_item.flags() & ~Qt.ItemFlag.ItemIsEditable)  # Make the item read-only
-                self.table.setItem(row_number, column_number, local_item)
+                item = QTableWidgetItem(str(data))
+                if column_number != 0:  # Skip making the 'Id' column editable
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                self.table.setItem(row_number, column_number, item)
+
         connection.close()
 
     def insert(self):
@@ -71,9 +65,6 @@ class MainWindow(QMainWindow):
     def show_search_dialog(self):
         dialog = SearchDialog()
         dialog.exec()
-
-
-
 
 class InsertDialog(QDialog):
     def __init__(self):
@@ -85,23 +76,19 @@ class InsertDialog(QDialog):
 
         layout = QVBoxLayout()
 
-        # Add employee name widget
         self.employee_name = QLineEdit()
         self.employee_name.setPlaceholderText("Name")
         layout.addWidget(self.employee_name)
 
-        # Add combo box of Departments
         self.department_name = QComboBox()
         departments = ["IT", "HR", "Marketing", "Sales"]
         self.department_name.addItems(departments)
         layout.addWidget(self.department_name)
 
-        # Add mobile widget
         self.mobile = QLineEdit()
         self.mobile.setPlaceholderText("Mobile")
         layout.addWidget(self.mobile)
 
-        # Add submit button
         button = QPushButton("Register")
         button.clicked.connect(self.add_employee)
         layout.addWidget(button)
@@ -120,13 +107,11 @@ class InsertDialog(QDialog):
         connection.commit()
         cursor.close()
         connection.close()
-        main_window.load_data()  # load the new employee
-
+        main_window.load_data()
 
 class SearchDialog(QDialog):
     def __init__(self):
         super().__init__()
-        # Set window title and size
         self.setWindowTitle("Search Employee")
         self.setFixedWidth(300)
         self.setFixedHeight(300)
@@ -149,15 +134,34 @@ class SearchDialog(QDialog):
         connection = sqlite3.connect("database.db")
         cursor = connection.cursor()
         result = cursor.execute("SELECT * FROM employees WHERE name=?", (name,))
-        row = list(result)[0]
-        print(row)
+        row = list(result)
+        # Clear the existing contents of the table
+        main_window.table.clearContents()
+        main_window.table.setRowCount(0)
+
+        for row_number, row_data in enumerate(row):
+            main_window.table.insertRow(row_number)
+            for column_number, data in enumerate(row_data):
+                item = QTableWidgetItem(str(data))
+                if column_number != 0:  # Skip making the 'Id' column editable
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                main_window.table.setItem(row_number, column_number, item)
 
         cursor.close()
         connection.close()
+
+        # Close the dialog
+        self.accept()
+
+    def show_all_employees(self):
+        # Clear the text in the search input
+        self.employee_name.clear()
+
+        # Call the search method to reload all employees
+        self.search()
 
 
 app = QApplication(sys.argv)
 main_window = MainWindow()
 main_window.show()
-main_window.load_data()  # Call load_data to populate the table initially
 sys.exit(app.exec())
