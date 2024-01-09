@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
 
         # Top toolbar
         toolbar_top = QToolBar()
-        toolbar_top.setMovable(True)
+        toolbar_top.setMovable(False)
         self.addToolBar(toolbar_top)
 
         # Add Employee action
@@ -65,11 +65,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.table)
 
         # create toolbar and add toolbar elements
-        toolbar = QToolBar()
-        toolbar.setMovable(True)
-        self.addToolBar(toolbar)
-        toolbar.addAction(add_employee_action)
-        toolbar.addAction(search_action)
+        toolbar_top.addAction(add_employee_action)
+        toolbar_top.addAction(search_action)
 
         # create status bar and add status bar elements
         self.statusbar = QStatusBar()
@@ -134,9 +131,17 @@ class AboutDialog(QMessageBox):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("About")
+        self.setFixedWidth(300)
+        self.setFixedHeight(150)
+
+        layout = QVBoxLayout()
+
         content = """ 
         This app was created for training purposes
         """
+        label = QLabel(content)
+        layout.addWidget(label)
+
         self.setText(content)
 
 
@@ -214,6 +219,7 @@ class DeleteDialog(QDialog):
         self.setLayout(layout)
 
         yes.clicked.connect(self.delete_employee)
+        no.clicked.connect(self.close)  # Close the dialog when "No" is clicked
 
     def delete_employee(self):
         # Get selected row index and employee id
@@ -278,6 +284,7 @@ class InsertDialog(QDialog):
         connection.commit()
         cursor.close()
         connection.close()
+        self.close()
         main_window.load_data()
 
 
