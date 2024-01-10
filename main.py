@@ -102,27 +102,27 @@ class MainWindow(QMainWindow):
         connection.close()
 
     @staticmethod
-    def insert(self):
+    def insert():
         dialog = InsertDialog()
         dialog.exec()
 
     @staticmethod
-    def search(self):
+    def search():
         dialog = SearchDialog()
         dialog.exec()
 
     @staticmethod
-    def edit(self):
+    def edit():
         dialog = EditDialog()
         dialog.exec()
 
     @staticmethod
-    def delete(self):
+    def delete():
         dialog = DeleteDialog()
         dialog.exec()
 
     @staticmethod
-    def about(self):
+    def about():
         dialog = AboutDialog()
         dialog.exec()
 
@@ -230,10 +230,16 @@ class DeleteDialog(QDialog):
         connection.close()
         main_window.load_data()
 
+        self.show_success_message()
+
         self.close()
 
+    @staticmethod
+    def show_success_message():
         confirmation_widget = QMessageBox()
         confirmation_widget.setWindowTitle("Success")
+        confirmation_widget.setText("The record was deleted successfully!")
+        confirmation_widget.exec()
         confirmation_widget.setText("The record was deleted successfully!")
 
 
