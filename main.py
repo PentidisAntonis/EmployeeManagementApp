@@ -131,14 +131,10 @@ class AboutDialog(QMessageBox):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("About")
-        self.setFixedWidth(300)
-        self.setFixedHeight(150)
 
         layout = QVBoxLayout()
 
-        content = """ 
-        This app was created for training purposes
-        """
+        content = "This app was created for training purposes"
         label = QLabel(content)
         layout.addWidget(label)
 
